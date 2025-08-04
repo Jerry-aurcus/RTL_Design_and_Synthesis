@@ -748,3 +748,190 @@ This information is essential for accurate synthesis, timing analysis, and optim
 
 Let me know when you're ready to go over the actual structure or syntax of a `.lib` entry.
 
+![WhatsApp Image 2025-08-04 at 22 04 02 (1)](https://github.com/user-attachments/assets/fc6fe209-0a08-45ac-a615-a207019d7b5a)
+
+
+
+![WhatsApp Image 2025-08-04 at 22 04 02](https://github.com/user-attachments/assets/0e30de85-317f-4b4e-90ab-80e64db05285)
+
+
+ **SKY130RTL D2SK1 L2 – Lab 4: Introduction to `.lib` Files (Part 1)**:
+
+---
+
+## **Understanding the Contents of a `.lib` File**
+
+---
+
+### **1. Library Declaration**
+
+```text
+Library ("sky130_fd_sc_hd__tt_025C_1v80")
+```
+
+This line declares the name of the standard cell library being used.
+
+Breakdown:
+
+* **sky130\_fd\_sc\_hd** – SkyWater 130nm standard cell library (high-density variant)
+* **tt** – Typical **PVT** (Process-Voltage-Temperature) corner
+* **025C** – Temperature: 25°C
+* **1v80** – Supply voltage: 1.80V
+
+---
+
+### **2. What is a PVT Corner?**
+
+**PVT** stands for **Process**, **Voltage**, and **Temperature**—three key factors affecting silicon performance.
+
+| **Parameter** | **Meaning**                                         |
+| ------------- | --------------------------------------------------- |
+| Process       | Fabrication variation (e.g., fast, slow, typical)   |
+| Voltage       | Affects switching speed and power                   |
+| Temperature   | Higher temp → slower; Lower temp → faster switching |
+
+---
+
+### **3. Why Do We Need PVT Corners?**
+
+PVT corners help ensure the design:
+
+* Works under **worst-case**, **best-case**, and **typical** conditions
+* Is both **functionally correct** and **timing-safe**
+
+#### **Examples of PVT Corners:**
+
+| **Corner Name** | **Description**                               |
+| --------------- | --------------------------------------------- |
+| ss\_125C\_1v60  | Slow process, 125°C, 1.60V (worst-case delay) |
+| ff\_0C\_1v95    | Fast process, 0°C, 1.95V (best-case delay)    |
+| tt\_025C\_1v80  | Typical case for normal operation             |
+
+---
+
+### **Conclusion**
+
+The `.lib` file serves as a **technology reference** for synthesis tools. It enables the tool to:
+
+* Select appropriate **standard cells**
+* Estimate **timing and power**
+* Perform **PVT-aware technology mapping**
+
+A proper understanding of `.lib` content ensures that the synthesized circuit will operate correctly across all expected real-world conditions.
+
+
+## **SKY130RTL D2SK1 L2 Lab4 Introduction to dot Lib part2**
+
+
+Deep Dive into the .lib File
+The .lib (Liberty) file contains detailed information about standard cells used during logic synthesis and static timing analysis. Let’s explore its major contents and structure.
+
+
+![WhatsApp Image 2025-08-04 at 22 04 02](https://github.com/user-attachments/assets/031bf334-c94c-4bbd-9a65-a8e747c4a3e2)
+
+### 1. Units and Operating Conditions in `.lib` File
+
+---
+
+#### **Defined Units**
+
+The beginning of a `.lib` file sets the standard units for interpretation:
+
+```liberty
+time_unit         : "1ns";         // Time in nanoseconds  
+voltage_unit      : "1V";          // Voltage in volts  
+current_unit      : "1mA";         // Current in milliamperes  
+leakage_power_unit: "1nW";         // Leakage power in nanowatts  
+pulling_resistance_unit : "1kohm"; // Resistance in kilohms  
+capacitance_unit  : "1fF";         // Capacitance in femtofarads  
+```
+
+---
+
+#### **Operating Conditions**
+
+```liberty
+operating_conditions(tt_025C_1v80) {
+  process   : 1;
+  voltage   : 1.8;
+  temperature : 25;
+}
+```
+
+These settings define the **PVT corner** under which all timing and power data inside the `.lib` are characterized.
+
+![WhatsApp Image 2025-08-04 at 22 04 02](https://github.com/user-attachments/assets/d41a5318-a61f-40b2-8086-98c73b8f01b2)
+
+
+### 2. Multiple Cells and Cell Definitions
+
+In a `.lib` file, many standard cells are defined, each beginning with:
+
+```liberty
+cell (cell_name) {
+    ...
+}
+```
+
+#### **Example:**
+
+```liberty
+cell (sky130_fd_sc_hd__a2111o_1) {
+    ...
+}
+```
+
+Here:
+
+* **sky130\_fd\_sc\_hd\_\_a2111o\_1**: Name of the standard cell.
+
+  * `a2111o`: Indicates the logic function (e.g., AND/OR combination).
+  * `_1`: Indicates the drive strength variant.
+
+Each cell block contains information about its:
+
+* Functionality
+* Area
+* Pin definitions
+* Timing characteristics
+* Power consumption
+
+
+![WhatsApp Image 2025-08-04 at 22 07 14 (2)](https://github.com/user-attachments/assets/1d7ee668-dee8-4cd9-bb42-87e85aa19ce2)
+
+
+This marks the beginning of the definition for the cell sky130_fd_sc_hd__a2111o_1.
+
+---
+**Flavours of Cells**
+
+The same logic function may have multiple variants (or flavours), e.g., _0, _1, _2, etc.
+
+These variants differ in driving strength, delay, power consumption, and area.
+
+For example:
+
+*sky130_fd_sc_hd__a2111o_1: Standard drive
+*sky130_fd_sc_hd__a2111o_2: Higher drive strength
+
+**Example Cell: sky130_fd_sc_hd__a2111o_1**
+
+*This is a complex gate with 5 inputs: A1, A2, B1, C1, D1.
+
+*The cell performs a specific logic operation defined in both .lib and equivalent Verilog model.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
