@@ -920,6 +920,380 @@ For example:
 
 *The cell performs a specific logic operation defined in both .lib and equivalent Verilog model.
 
+You can view the Verilog model of the library using the following command inside Vim:
+
+```bash
+:sp ../my_lib/verilog_model/sky130_fd_sc_hd_a2111oi_0.behavioral.v
+```
+
+* `:sp` opens the file in a horizontal split.
+* `../my_lib/verilog_model/sky130_fd_sc_hd_a2111oi_0.behavioral.v` is the path to the Verilog model of the Sky130 standard cell library.
+
+
+![WhatsApp Image 2025-08-04 at 22 07 14 (5)](https://github.com/user-attachments/assets/984c7e3b-7388-4827-a031-9580a230c77a)
+
+
+**Here's the summarized key information found inside each `cell` block in a `.lib` file:**
+
+| **Parameter**       | **Description**                                                                 |
+| ------------------- | ------------------------------------------------------------------------------- |
+| `area`              | Physical area of the cell (in square microns)                                   |
+| `pin`               | Definition block for each input/output port                                     |
+| `input_capacitance` | Intrinsic capacitance of the input pin                                          |
+| `power`             | Power consumption info: internal power, leakage, dynamic                        |
+| `timing`            | Delay, transition time, and slope-related timing information                    |
+| `function`          | Boolean logic function implemented by the cell                                  |
+| `related_pin`       | Specifies which other pin affects timing of a given pin (for setup/hold checks) |
+
+
+
+
+![WhatsApp Image 2025-08-04 at 22 07 14 (5)](https://github.com/user-attachments/assets/4f9c354a-af07-47c5-91c6-27c5679478ad)
+
+
+
+![WhatsApp Image 2025-08-04 at 22 07 14](https://github.com/user-attachments/assets/c8059516-9daa-49d4-a409-27579ce8e40e)
+
+
+**Importance in Synthesis and Timing**
+
+The data in the .lib file helps the synthesis tool:
+
+*Estimate propagation delays
+*Analyze power and leakage
+*Select the most optimal variant of a cell based on constraints
+*Ensure that designs meet setup, hold, and clock period requirements
+
+## **SKY130RTL D2SK1 L2 Lab4 Introduction to dot Lib part3**
+
+Here is a structured explanation for Example 2 on analyzing a smaller gate (AND gate) from the standard cell library. This version is formatted cleanly for use in reports, lab manuals, or documentation:
+
+Example 2: Understanding a Simple Gate – AND Gate
+
+
+
+![WhatsApp Image 2025-08-04 at 22 04 02 (1)](https://github.com/user-attachments/assets/e34a4df5-094f-4eb7-a649-371691c82007)
+
+
+
+Cell Under Study: sky130_fd_sc_hd__and2_0
+
+![WhatsApp Image 2025-08-04 at 22 35 00 (1)](https://github.com/user-attachments/assets/93ce03cd-ded2-4605-9d66-398ed2892b70)
+
+ `sky130_fd_sc_hd__and2_0` cell:
+
+* **Name**: `sky130_fd_sc_hd__and2_0`
+* **Type**: 2-input AND gate
+* **Function**: Outputs logical AND of two inputs
+* **Inputs**: A, B
+* **Output**: Y
+* **Input Combinations**: 2² = 4 (00, 01, 10, 11)
+
+**Verilog Model Location**:
+You can view its RTL definition in the file:
+
+```
+:sp ../my_lib/verilog_model/sky130_fd_sc_hd.v
+```
+
+![WhatsApp Image 2025-08-04 at 22 35 00 (2)](https://github.com/user-attachments/assets/17deccde-f28c-44c6-9b0a-987929e7256b)
+
+**Area Analysis Summary**:
+
+* **Goal**: Compare physical area of `and2_0` vs `and2_1` standard cells.
+
+* **Method**:
+
+  1. Open the `.lib` file.
+  2. Locate:
+
+     ```liberty
+     cell (sky130_fd_sc_hd__and2_0) { ... }
+     cell (sky130_fd_sc_hd__and2_1) { ... }
+     ```
+  3. Find the `area` parameter inside each cell block.
+
+* **Tip**: Use GVim vertical split for side-by-side comparison:
+
+  ```
+  :vsp
+  ```
+
+This allows a direct visual comparison of area and other attributes.
+
+
+![WhatsApp Image 2025-08-04 at 22 35 00](https://github.com/user-attachments/assets/72a22388-3989-4577-813f-303dd6b5683a)
+
+
+![WhatsApp Image 2025-08-04 at 22 35 01 (1)](https://github.com/user-attachments/assets/731b6714-4f67-4ea5-9899-dfb325720a54)
+
+
+---
+
+**Comparison: and2\_0 vs and2\_1**
+
+| **Cell Name**                 | **Area (μm²)** | **Inference**                |
+| ----------------------------- | -------------- | ---------------------------- |
+| sky130\_fd\_sc\_hd\_\_and2\_0 | Smaller        | Narrower transistors, slower |
+| sky130\_fd\_sc\_hd\_\_and2\_1 | Larger         | Wider transistors, faster    |
+
+* and2\_1 has a larger area than and2\_0.
+* The larger area implies wider transistors are used in and2\_1.
+* Wider transistors can source/sink more current, leading to faster switching, but they occupy more silicon area and consume more power.
+* Higher drive strength versions (like \_1, \_2) use wider transistors.
+* Wider transistors can charge/discharge load capacitance faster, resulting in lower delay.
+* However, they consume more area and often more power.
+
+**Conclusion**
+By comparing and2\_0 and and2\_1 in the .lib file:
+You observe the trade-off between area and performance.
+Larger cells = faster, but costlier in silicon area.
+Synthesis tools must choose the right variant based on timing, area, and power constraints.
+
+### **Hierarchical vs Flat Synthesis**
+
+**SKY130RTL D2SK2 L1 – Lab 05: Hierarchical and Flat Synthesis (Part 1)**
+
+---
+
+### **What is Hierarchical vs. Flat Synthesis?**
+
+In digital design, a system may be composed of multiple submodules. These can be synthesized using two approaches:
+
+---
+
+### **Hierarchical Synthesis**
+
+* Submodules are preserved as independent blocks.
+* Each module is synthesized separately and then connected at the top level.
+
+**Benefits:**
+
+* Faster synthesis for large designs
+* Easier modular debugging and reuse
+
+**Drawbacks:**
+
+* Limited global optimization across module boundaries
+
+---
+
+### **Flat Synthesis**
+
+* All submodules are inlined into the top-level module.
+* Results in a single flattened netlist.
+
+**Benefits:**
+
+* Better optimization for area, timing, and power
+
+**Drawbacks:**
+
+* Higher memory usage and longer synthesis time
+* Harder to trace logic back to original modules
+
+---
+
+### **Example Design: `multiple_modules.v`**
+
+* Located in the `verilog_files` directory
+* Defines a hierarchical design using two submodules.
+
+![WhatsApp Image 2025-08-05 at 09 34 36 (1)](https://github.com/user-attachments/assets/f6131963-87c5-45ec-9d1d-59b972e48800)
+
+
+![WhatsApp Image 2025-08-05 at 09 34 36 (2)](https://github.com/user-attachments/assets/f6dfdfbb-6c01-4fac-b0ec-d65ccbf8cc65)
+
+
+<img width="829" height="484" alt="Screenshot 2025-08-05 at 9 39 39 AM" src="https://github.com/user-attachments/assets/fa5cb7f2-1207-4e16-9343-9f5d04749d4c" />
+
+
+
+**Synthesis of multiple_modules.v**
+
+Let’s now synthesize the multiple_modules.v file.
+
+![WhatsApp Image 2025-08-05 at 09 34 37](https://github.com/user-attachments/assets/88f5c54f-a98c-4d50-a210-ac301db694a7)
+
+
+![WhatsApp Image 2025-08-05 at 09 34 37 (1)](https://github.com/user-attachments/assets/0580ebc9-b730-4431-950b-25ee14d15e45)
+
+![WhatsApp Image 2025-08-05 at 09 34 37 (2)](https://github.com/user-attachments/assets/f6a3ba26-8647-444d-b2e6-018f15ae4237)
+
+### **Design Structure**
+
+* **Submodules:**
+
+  * `sub_module1`: Implements an AND gate
+  * `sub_module2`: Implements an OR gate
+
+* **Top-level module (`multiple_modules`):**
+
+  * Instantiates `sub_module1` as `u1`
+  * Instantiates `sub_module2` as `u2`
+
+---
+
+### **Report Summary**
+
+* `sub_module1`: 1 AND gate
+* `sub_module2`: 1 OR gate
+* `multiple_modules`: 1 instance of each submodule
+
+**Total logic in the design:**
+
+* 1 AND gate
+* 1 OR gate
+
+---
+
+### **Linking the Design to the Library in Yosys**
+
+Use the following command:
+
+```bash
+abc -liberty ../lib/sky130_fd_sc_hd__tt_025C_1v80.lib
+```
+
+
+
+![WhatsApp Image 2025-08-05 at 09 34 37 (2)](https://github.com/user-attachments/assets/6c9d73be-0726-46dc-9d50-a38d66455e95)
+
+### **Visualizing the Synthesized Design: Hierarchical View**
+
+After synthesis and linking, use the following Yosys command:
+
+```bash
+show multiple_modules
+```
+
+This command displays the synthesized gate-level view of the `multiple_modules` design in hierarchical form.
+
+
+![WhatsApp Image 2025-08-05 at 09 34 37 (4)](https://github.com/user-attachments/assets/99817b59-eeeb-4514-8c99-9e821df1b3b8)
+
+This command opens a graphical representation of the design.
+
+What Do You See?
+
+![WhatsApp Image 2025-08-05 at 09 34 37 (5)](https://github.com/user-attachments/assets/7da138be-97df-4bf4-bc08-83b32e260aba)
+
+
+### **Hierarchical Synthesis: Visualization and Netlist**
+
+---
+
+### **What We Observe**
+
+* Instead of a gate-level diagram, the view shows:
+
+  * `u1`: Instance of `sub_module1`
+  * `u2`: Instance of `sub_module2`
+
+* These are preserved as separate blocks, not expanded into gates.
+
+---
+
+### **Why This Happens**
+
+* The design uses **hierarchical synthesis**.
+* Submodules (`sub_module1`, `sub_module2`) are preserved.
+* Gates inside submodules are **not flattened**, so they are not visible in the top-level schematic.
+
+---
+
+### **What We Expected vs. What We See**
+
+| **Expectation**               | **Observation**                   |
+| ----------------------------- | --------------------------------- |
+| AND and OR gates shown        | Only `u1` and `u2` instances seen |
+| Flat gate-level logic diagram | Hierarchical module diagram       |
+
+---
+
+### **Writing the Netlist**
+
+To write the netlist in hierarchical form:
+
+```bash
+write_verilog -noattr multiple_modules_hier.v
+```
+
+
+![WhatsApp Image 2025-08-05 at 09 34 37 (7)](https://github.com/user-attachments/assets/f290e32b-22be-4afa-ade5-8199ea9c60f7)
+
+
+
+![WhatsApp Image 2025-08-05 at 09 34 37 (7)](https://github.com/user-attachments/assets/4fbfab40-7d6c-4ff3-b6c7-ca5cfa96c6c2)
+
+When you open the file, you’ll observe that sub_module1 and sub_module2 are preserved as separate modules in the netlist.
+
+![WhatsApp Image 2025-08-05 at 09 34 37 (8)](https://github.com/user-attachments/assets/e8d564b0-5339-4b40-ba09-c12a4b2f15f2)
+
+![WhatsApp Image 2025-08-05 at 09 34 37 (9)](https://github.com/user-attachments/assets/66eaab34-e4cb-4dc5-85b6-f7d8a125f3a1)
+
+
+![WhatsApp Image 2025-08-05 at 09 34 36](https://github.com/user-attachments/assets/8be2a93d-7f17-461a-8c6b-75b743bc8862)
+
+
+**Observation from the Generated Netlist**
+
+
+When the netlist was generated by the instructor, the structure of sub_module2 appeared different from a straightforward OR gate implementation. It resembled something like the following:
+
+### **Why OR Gate Was Replaced with NAND + Inverters**
+
+---
+
+**Observation:**
+The synthesis tool did not use a direct OR gate; instead, it implemented the logic using **inverters and a NAND gate** — a **bubbled NAND**, which is logically equivalent to an OR gate.
+
+---
+
+### **Why Did the Synthesis Tool Do This?**
+
+**CMOS Design Principle:**
+
+* **NAND gates** use **stacked NMOS** (fast, area-efficient).
+* **NOR gates** use **stacked PMOS** (slow, large area due to low hole mobility).
+
+---
+
+### **Key Reason:**
+
+* **PMOS transistors** have lower mobility than NMOS.
+* Stacked PMOS (as in NOR or OR) leads to **larger**, **slower** gates.
+* So, the tool **avoids NOR** and **prefers NAND + inverters** (DeMorgan equivalent).
+
+---
+
+### **Conclusion:**
+
+Although RTL says:
+
+```verilog
+assign y = a | b;
+```
+
+The synthesis tool rewrites it using **CMOS-efficient logic** that:
+
+* Uses fewer/lighter PMOS
+* Is **faster** and **area-efficient**
+* **Keeps the same logical function**
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
