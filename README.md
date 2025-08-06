@@ -1283,9 +1283,489 @@ The synthesis tool rewrites it using **CMOS-efficient logic** that:
 
 
 
+### **SKY130RTL D2SK2 L2 – Lab 05: Hierarchical vs Flat Synthesis (Part 2)**
+
+---
+
+### **Synthesis Behavior**
+
+* **Hierarchical synthesis**:
+  `sub_module1` and `sub_module2` appear as **separate blocks** in the netlist.
+
+* **Flat synthesis**:
+  All logic is **merged** into `multiple_modules`.
+  **Submodule boundaries are removed**.
+
+---
+
+### **Flattening the Design in Yosys**
+
+To flatten the hierarchy:
+
+```bash
+flatten
+write_verilog -noattr multiple_modules_flat.v
+```
+
+![WhatsApp Image 2025-08-06 at 19 16 01 (2)](https://github.com/user-attachments/assets/09c5cbee-632e-4596-b96f-845233719a74)
+
+This generates a flattened netlist named multiple_modules_flat.v.
+
+Comparison with Hierarchical Netlist
+
+
+![WhatsApp Image 2025-08-06 at 19 16 02](https://github.com/user-attachments/assets/47f3bf24-21e3-48a6-b622-61b1a0941c16)
+
+In the hierarchical netlist, the definitions of sub_module1 and sub_module2 are preserved as separate modules.
+
+In the flattened netlist, the hierarchy is removed.
+
+The logic inside the submodules is inlined into the top-level module.
+You directly see the AND and OR gate instantiations within multiple_modules.
 
 
 
+
+
+![WhatsApp Image 2025-08-06 at 19 16 02 (2)](https://github.com/user-attachments/assets/41bb6e38-3637-4067-a08d-6687dd8905c5)
+
+use command show to see the graphyical representation
+
+show
+
+![WhatsApp Image 2025-08-06 at 19 16 02 (3)](https://github.com/user-attachments/assets/38e3bed4-7e8e-4455-96fa-9aeb2fc3f33a)
+
+### **Conclusion**
+
+* **Flattening** simplifies structure for downstream tools and enables better optimization.
+* But it **removes modular boundaries**, making manual interpretation more difficult.
+
+---
+
+### **Submodule-Level Synthesis Example: `sub_module1` (instance `u1`)**
+
+Use the following Yosys commands:
+
+```bash
+read_liberty ../lib/sky130_fd_sc_hd__tt_025C_1v80.lib
+read_verilog multiple_modules.v
+synth -top sub_module1
+abc -liberty ../lib/sky130_fd_sc_hd__tt_025C_1v80.lib
+show
+```
+
+
+![WhatsApp Image 2025-08-06 at 19 16 02 (4)](https://github.com/user-attachments/assets/28e151ff-0adf-4f2c-92ab-851ec7f38734)
+
+
+
+![WhatsApp Image 2025-08-06 at 19 16 02 (5)](https://github.com/user-attachments/assets/4a68f9da-c8b6-46b5-89ae-924be39be15a)
+
+![WhatsApp Image 2025-08-06 at 19 16 02 (6)](https://github.com/user-attachments/assets/5ea22754-6806-433f-aa5e-9eb52877189a)
+
+
+![WhatsApp Image 2025-08-06 at 19 16 01](https://github.com/user-attachments/assets/a8ad5983-6a5b-48c6-919e-0a1937cacbf9)
+
+### **What Do We See?**
+
+* `sub_module1` is set as the top module, so **only the AND gate logic** is synthesized.
+* The `show` command visualizes **just the AND gate**.
+* You **won’t see** `sub_module2` or `multiple_modules`.
+
+---
+
+### **Why Perform Submodule-Level Synthesis?**
+
+#### 1. **Reuse of Repeated Logic**
+
+* Example: Top-level module contains 6 instances of a multiplier.
+* Instead of synthesizing each multiplier:
+
+  * **Synthesize once**
+  * **Reuse the synthesized version**
+* **Benefits**:
+
+  * Saves time
+  * Reduces redundancy
+  * Improves efficiency
+
+#### 2. **Divide and Conquer Approach**
+
+* For large/complex designs:
+
+  * **Synthesize submodules independently**
+  * **Integrate later into full system**
+* **Benefits**:
+
+  * Easier debugging
+  * Better timing control
+  * Scalable development
+
+---
+
+### **Conclusion**
+
+Submodule-level synthesis allows:
+
+* Efficient handling of repeated modules
+* Simplified modular design and optimization
+* A scalable approach for large digital systems
+
+---
+
+### **Timing Analysis: Expression `Y = (A & B) | C`**
+
+#### **Gate Delays**
+
+* AND gate = 2 ns
+* OR gate = 1 ns
+
+#### **Initial Conditions**
+
+| Signal | Value before 0 ns | Transition at 0 ns |
+| ------ | ----------------- | ------------------ |
+| A      | 0                 | 0 → 1              |
+| B      | 0                 | 0 → 1              |
+| C      | 1                 | 1 → 0              |
+
+* Before 0 ns:
+
+  * `(A & B) = 0`
+  * `Y = 0 | 1 = 1`
+
+---
+
+### **Step-by-Step Timing**
+
+#### **Time = 0 ns**
+
+* A and B begin rising (0 → 1)
+* C begins falling (1 → 0)
+
+#### **Time = 1 ns**
+
+* OR gate sees:
+
+  * `C = 0`
+  * `A & B` output still not ready (AND gate has 2 ns delay → output still 0)
+* OR computes: `0 | 0 = 0`
+* **Y falls to 0 → glitch occurs**
+
+#### **Time = 2 ns**
+
+* AND gate output becomes 1 (A = 1, B = 1)
+* OR computes: `1 | 0 = 1`
+* **Y rises back to 1**
+
+---
+
+###  Final Observation:
+
+* A **glitch** (unintended output pulse) occurs at **1 ns** due to mismatched gate delays.
+* **Glitch-free logic** often requires **balancing paths** or adding **buffers/delays**.
+
+
+<img width="830" height="496" alt="Screenshot 2025-08-06 at 7 29 18 PM" src="https://github.com/user-attachments/assets/bfef267e-c66e-4598-9824-09ced21ce7e3" />
+
+
+### **Conclusion**
+
+* **Y was initially 1**.
+* At **1 ns**, both inputs to the OR gate became 0:
+
+  * AND gate output was **not ready yet** (2 ns delay).
+  * **C had already dropped** to 0.
+* Result: **Y briefly glitched to 0**, then returned to 1 at 2 ns.
+* This is a **Static-1 hazard**, caused by **unbalanced path delays**.
+
+---
+
+### **Why We Need a Flip-Flop in Digital Circuits**
+
+#### **Combinational Circuit Limitation**
+
+* Outputs **directly follow inputs**, including glitches from delay mismatches.
+* Without control, **glitches can propagate** endlessly.
+* This is **unreliable**, especially in sequential systems.
+
+---
+
+### **Role of Flip-Flops**
+
+* Flip-flops (like **D flip-flop**) act as **storage elements**.
+* Functions:
+
+  * **Capture and hold** stable output from a combinational block.
+  * **Block glitches** from affecting downstream logic.
+  * **Synchronize updates** using a **clock edge**.
+
+#### **Behavior**
+
+* Flip-flop updates output only on a **clock edge**.
+* **Glitchy changes between edges are ignored**.
+* Only the **final, stable value** is passed forward.
+
+---
+
+### **Why Initialization Is Important**
+
+* Without initialization, **flip-flop output is undefined**.
+* This may cause **incorrect logic evaluations**.
+* Solution:
+
+  * Use **reset** or **set** signal during startup.
+  * Ensures system begins in a **known, valid state**.
+
+## **SKY130RTL D2SK3 L2 Why Flops and Flop coding styles part2**
+
+
+
+<img width="821" height="562" alt="Screenshot 2025-08-06 at 7 31 44 PM" src="https://github.com/user-attachments/assets/517d2cea-4c69-4c96-aca5-269acda0c9c1" />
+
+
+## **SKY130RTL D2SK3 L3 Lab flop synthesis simulations part1**
+
+### **1) D Flip-Flop with Asynchronous Reset**
+
+#### **Verilog Code: `dff_async_reset.v`**
+
+```verilog
+module dff_async_reset (
+    input clk,
+    input rst,
+    input d,
+    output reg q
+);
+
+always @(posedge clk or posedge rst) begin
+    if (rst)
+        q <= 0;
+    else
+        q <= d;
+end
+
+endmodule
+```
+
+---
+
+#### **Testbench: `tb_dff_async_reset.v`**
+
+```verilog
+`timescale 1ns/1ps
+
+module tb_dff_async_reset;
+
+reg clk, rst, d;
+wire q;
+
+dff_async_reset uut (
+    .clk(clk),
+    .rst(rst),
+    .d(d),
+    .q(q)
+);
+
+always #5 clk = ~clk;
+
+initial begin
+    $dumpfile("tb_dff_async_reset.vcd");
+    $dumpvars(0, tb_dff_async_reset);
+
+    clk = 0; rst = 0; d = 0;
+
+    #3  rst = 1;
+    #7  rst = 0;
+    #5  d = 1;
+    #10 d = 0;
+    #10 $finish;
+end
+
+endmodule
+```
+
+
+![WhatsApp Image 2025-08-06 at 19 36 02](https://github.com/user-attachments/assets/a32f10f4-2b3b-4f9f-8cbc-59fe4e712c91)
+
+
+
+![WhatsApp Image 2025-08-06 at 19 36 02 (1)](https://github.com/user-attachments/assets/78dcdc4e-5d5d-4b36-b1d7-3de80af8792b)
+
+2) D FlipFlop with Synchronous reset
+
+
+<img width="814" height="151" alt="Screenshot 2025-08-06 at 7 41 17 PM" src="https://github.com/user-attachments/assets/46195d07-1865-437e-812d-fd69c15ba112" />
+
+<img width="831" height="827" alt="Screenshot 2025-08-06 at 7 41 30 PM" src="https://github.com/user-attachments/assets/54b587d5-5917-4570-bb68-1e10d7d83533" />
+
+
+
+![WhatsApp Image 2025-08-06 at 19 36 03](https://github.com/user-attachments/assets/c4634ba4-e146-4709-bbf4-1769623d6876)
+
+
+![WhatsApp Image 2025-08-06 at 19 36 01](https://github.com/user-attachments/assets/85d3cf0e-ae5f-41fd-b550-5e288d69181b)
+
+
+3)  D FlipFlop with Asynchronous set
+
+
+
+<img width="822" height="167" alt="Screenshot 2025-08-06 at 7 44 07 PM" src="https://github.com/user-attachments/assets/4156bcaf-b9d2-4a37-90ca-dded23c84218" />
+
+<img width="833" height="776" alt="Screenshot 2025-08-06 at 7 44 24 PM" src="https://github.com/user-attachments/assets/9348265a-cf89-47ce-88c3-04ac32bfe079" />
+
+
+![WhatsApp Image 2025-08-06 at 19 36 02 (3)](https://github.com/user-attachments/assets/33a0de70-9c3b-461f-ad04-69b1f413cd5a)
+
+![WhatsApp Image 2025-08-06 at 19 36 02 (4)](https://github.com/user-attachments/assets/ce326842-c19d-46a7-acd0-f706b409de7b)
+
+### **SKY130RTL D2SK3 L4 – Lab: Flip-Flop Synthesis Simulations (Part 2)**
+
+---
+
+### **1) D Flip-Flop with Asynchronous set**
+
+---
+
+### **Why We Use `dfflibmap` in Synthesis Flow**
+
+* In many flows, **flip-flops are stored separately** from logic gates in the library.
+* `dfflibmap` is used to **map generic flip-flops** in RTL to **specific flip-flop cells** in the standard cell library.
+
+---
+
+### **Yosys Synthesis Flow**
+
+```bash
+read_liberty -lib ../lib/sky130_fd_sc_hd__tt_025C_1v80.lib
+read_verilog dff_async_reset.v
+synth -top dff_async_reset
+dfflibmap -liberty ../lib/sky130_fd_sc_hd__tt_025C_1v80.lib
+abc -liberty ../lib/sky130_fd_sc_hd__tt_025C_1v80.lib
+write_verilog -noattr dff_async_reset_netlist.v
+```
+
+![WhatsApp Image 2025-08-06 at 19 57 19 (3)](https://github.com/user-attachments/assets/6c00350d-19e3-48b0-9ff5-af2d41e2f815)
+
+
+![WhatsApp Image 2025-08-06 at 19 57 19 (4)](https://github.com/user-attachments/assets/4525b727-45ac-4364-9ebe-ac78a85db065)
+
+![WhatsApp Image 2025-08-06 at 19 57 19 (5)](https://github.com/user-attachments/assets/2b6dac58-19c9-4175-8bbd-f46e0f57a3f2)
+
+![WhatsApp Image 2025-08-06 at 19 57 19 (6)](https://github.com/user-attachments/assets/1dc5fd81-dbca-4982-89a3-e12c633b1092)
+
+
+
+![WhatsApp Image 2025-08-06 at 19 57 19 (7)](https://github.com/user-attachments/assets/8f4ad8b6-103f-44f2-9177-e6d2e34fd86c)
+
+**Why the Tool Inserted an Inverter**
+
+In the Verilog code, the D flip-flop is written with an active-high reset condition:
+
+```verilog
+if (reset)
+    q <= 0;
+```
+
+However, the standard cell library may only contain flip-flops with active-low reset functionality.
+
+To resolve this mismatch, the synthesis tool automatically inserts an inverter in front of the reset signal. This converts the active-high reset logic used in the RTL to match the active-low reset behavior expected by the physical flip-flop cell in the library.
+
+---
+
+**Why `dfflibmap` is Important**
+
+Without `dfflibmap`, the flip-flop may not be mapped correctly to a physical cell.
+
+This can result in either:
+
+* Synthesis failure
+* An incomplete netlist (no physical representation for your DFF)
+
+
+**2) D FlipFlop with Synchronous reset**
+
+![WhatsApp Image 2025-08-06 at 19 57 19 (8)](https://github.com/user-attachments/assets/f8370f0d-0a05-49f9-87b6-aaedbe152c73)
+
+
+![WhatsApp Image 2025-08-06 at 19 57 19 (9)](https://github.com/user-attachments/assets/ef7e6715-d862-4e96-92c0-98617f49170d)
+
+
+![WhatsApp Image 2025-08-06 at 19 57 19 (10)](https://github.com/user-attachments/assets/f4bba112-0ebc-4a30-90e5-74f55bf87598)
+
+
+
+![WhatsApp Image 2025-08-06 at 19 57 19](https://github.com/user-attachments/assets/98b959ac-10d5-4fa9-9bef-d5329d260b83)
+
+
+### **SKY130RTL D2SK3 L5 – Interesting Optimizations Part 1**
+
+---
+
+### **File: `mul2.v`**
+
+```verilog
+module mul2 (input [2:0] a, output [3:0] y);
+    assign y = a * 2;
+endmodule
+```
+
+### **Optimization Insight: Multiplication by Constant Power of 2**
+
+---
+
+At first glance, the `*` operator implies a hardware multiplier.
+But multiplication by a power of 2 is just a bitwise left shift.
+
+---
+
+#### **Example**
+
+```
+5 × 4 = 20  
+0101 × 4 = 10100  → left shift by 2
+```
+
+---
+
+#### **Equivalents**
+
+* `a * 2` → `a << 1`
+* `a * 4` → `a << 2`
+* `a * 2ⁿ` → `a << n`
+
+---
+
+### **Effect of Synthesis on `mul2`**
+
+Synthesis tool transforms:
+
+```verilog
+y = a * 2;
+```
+
+into:
+
+```verilog
+y = a << 1;
+```
+
+Hence, **no hardware multiplier cells** are inferred.
+
+![WhatsApp Image 2025-08-06 at 20 18 47 (1)](https://github.com/user-attachments/assets/7b74255e-6444-4727-a5be-a8777809b5e1)
+
+
+![WhatsApp Image 2025-08-06 at 20 18 47 (3)](https://github.com/user-attachments/assets/c19c1e1b-0ce3-47aa-bf94-a781847c7c20)
+
+
+![WhatsApp Image 2025-08-06 at 20 18 47 (4)](https://github.com/user-attachments/assets/94494264-2f09-4106-87a9-083594053d99)
+
+
+![WhatsApp Image 2025-08-06 at 20 18 48](https://github.com/user-attachments/assets/1d563e5f-f89e-4b20-92a2-621049dc42d6)
+
+
+
+![WhatsApp Image 2025-08-06 at 20 18 47](https://github.com/user-attachments/assets/b4597cc0-2262-48f6-8157-916637bed432)
 
 
 
