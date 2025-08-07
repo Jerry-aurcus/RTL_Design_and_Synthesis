@@ -1769,12 +1769,219 @@ Hence, **no hardware multiplier cells** are inferred.
 
 
 
+<img width="831" height="375" alt="Screenshot 2025-08-06 at 8 30 15 PM" src="https://github.com/user-attachments/assets/2e035142-416e-41a7-8eac-97712796ac36" />
 
 
 
 
+<img width="832" height="201" alt="Screenshot 2025-08-06 at 8 30 37 PM" src="https://github.com/user-attachments/assets/08fdc0f9-a7e9-42a2-b928-9efcb85d3c58" />
 
 
+
+
+So instead of generating a multiplier, the tool simply wires the bits accordingly — no actual multiplier hardware is required.
+
+This is a classic strength reduction optimization applied during synthesis
+
+
+### **SKY130RTL D2SK3 L6 – Interesting Optimizations Part 2**
+
+---
+
+### **Verilog Case: Multiply by 9**
+
+```verilog
+input  [2:0] a;
+output [5:0] y;
+
+assign y = a * 9;
+```
+
+---
+
+### **Optimization Insight**
+
+* $9 = 8 + 1 = (1 << 3) + 1$
+* So:
+  $a * 9 = (a << 3) + a$
+
+---
+
+### **Binary View**
+
+* Let `a = 3'babc`
+* `a << 3 = {a, 000}`
+* Adding `a` back:
+  $(a << 3) + a = {a, a}$
+
+---
+
+### **Conclusion**
+
+```verilog
+y = {a, a};
+```
+
+* No multiplier is used
+* Just concatenation and wiring
+* File name: `mul8.v` (but functionally multiplies by 9)
+
+
+![WhatsApp Image 2025-08-06 at 20 18 47](https://github.com/user-attachments/assets/96821fda-ba65-4070-a7a4-3dd2a04d059e)
+
+
+<img width="832" height="409" alt="Screenshot 2025-08-06 at 8 34 17 PM" src="https://github.com/user-attachments/assets/01b04d99-122b-4e5e-b9a2-dc474f984c67" />
+
+
+
+
+<img width="833" height="396" alt="Screenshot 2025-08-06 at 8 34 28 PM" src="https://github.com/user-attachments/assets/014a08ae-9ec9-431e-9557-3019de0c0c4e" />
+
+
+
+<img width="833" height="396" alt="Screenshot 2025-08-06 at 8 34 28 PM" src="https://github.com/user-attachments/assets/22593f33-765d-4236-bcdb-79d3a8f936d4" />
+
+
+
+
+### **SKY130RTL D3SK1 L1 – Introduction to Optimizations Part 1**
+
+---
+
+### **Combinational Logic Optimization**
+
+**Objective:**
+Simplify logic circuits to reduce **area**, **power**, and sometimes **delay**, without changing functionality.
+
+---
+
+### **Key Techniques for Optimization**
+
+#### **1. Constant Propagation (Direct Optimization)**
+
+* If a signal is driven by a constant (`0` or `1`), logic can be simplified at compile time.
+
+Examples:
+
+```verilog
+assign y = a & 1'b0;  // optimized to y = 0
+assign z = b | 1'b1;  // optimized to z = 1
+```
+
+### **2. Boolean Logic Optimization**
+
+Involves algebraic simplification of logic expressions using Boolean identities.
+
+---
+
+#### **a) Karnaugh Map (K-Map)**
+
+* Visual simplification method (best for ≤ 4–5 variables)
+* Groups adjacent 1s in the truth table
+* Reduces logic expressions by identifying common terms
+
+---
+
+#### **b) Quine–McCluskey Method**
+
+* Tabular, algorithmic technique for Boolean minimization
+* Suitable for automation
+* Can handle more variables than K-map
+* Produces a deterministic minimal form
+
+
+Conclusion
+
+Optimizing combinational logic reduces hardware cost and improves power efficiency. Techniques like constant propagation, K-map, and Quine–McCluskey are fundamental to achieving these improvements during synthesis.
+
+
+
+### **SKY130RTL D3SK1 L2 & L3 – Introduction to Optimizations Part 2 & 3**
+
+---
+
+### **Sequential Logic Optimization**
+
+**Goal:**
+Optimize designs with **flip-flops**, **latches**, and **state machines** to reduce **area**, **power**, or improve **timing**, while preserving behavior.
+
+---
+
+### **Types of Sequential Logic Optimization**
+
+#### **1. Basic Optimization**
+
+**Sequential Constant Propagation**
+
+* Similar to constant propagation in combinational logic
+* Applied across clocked elements
+* If a flip-flop is driven by a constant (or becomes constant),
+  → the flip-flop and dependent logic can be eliminated
+
+**Example:**
+
+```verilog
+always @(posedge clk)
+  q <= 1'b1;  // Can be optimized to a constant wire
+```
+
+### **2. Advanced Optimizations** *(Not covered in lab)*
+
+---
+
+#### **State Optimization**
+
+* Minimizes the number of states or improves encoding in FSMs
+* Techniques: **Gray code**, **one-hot encoding**
+* Benefits: Reduces **switching activity** or **logic size**
+
+---
+
+#### **Retiming**
+
+* Moves flip-flops across combinational logic
+* Maintains functional behavior
+* Balances **path delays** to meet **timing constraints**
+
+---
+
+#### **Sequential Logic Cloning** *(Floorplan-Aware Synthesis)*
+
+* Duplicates flip-flops to reduce **routing congestion**
+* Balances **timing** across chip regions
+* Used in **physical-aware synthesis** (layout-aware)
+
+---
+
+### **Conclusion**
+
+Sequential logic optimization:
+
+* **Improves timing**
+* **Reduces area**
+* **Minimizes power**
+
+Basic methods (e.g., constant propagation) are early-stage
+Advanced methods (e.g., retiming, FSM optimization) are used in **performance-critical** and **layout-aware** design flows.
+
+
+
+### **SKY130RTL D3SK2 L1 & L2: Lab06 – Combinational Logic Optimizations**
+
+---
+
+#### **Lab Overview**
+
+We will be using the following Verilog files for combinational logic optimization:
+
+* `opt_bool1.v`
+* `opt_bool2.v`
+* `opt_bool3.v`
+
+Each file demonstrates different cases of Boolean expression optimization and synthesis behavior.
+The goal is to understand how the synthesis tool simplifies logic to reduce area and power while preserving the intended functionality.
+
+---
 
 
 
